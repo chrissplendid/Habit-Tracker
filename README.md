@@ -31,3 +31,5 @@ ENTER 1 - Create/Add a new habit.
 ENTER 2 - Remove an existing habit.
 ENTER 3 - List all existing habits.
 ENTER 4 - List habits by Periodicity.
+ENTER 5 - Log/Check off a completed habit task.
+ENTER 6 - View tasks completed today.
