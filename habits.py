@@ -1,13 +1,22 @@
+#A HABIT TRACKING APPLICATION PROGRAM WRITTEN IN PYTHON
+########################################################
+
+#Import python datetime module
 import datetime
-#Import python sqlite3 for database management
+from datetime import date
+from datetime import timedelta
+#Import python sqlite3 module for database management
 import sqlite3
 
 #Create and establish a connection to the database
 dbconnection = sqlite3.connect("MyHabitTrackerDatabase")
 dbcursor = dbconnection.cursor()
 
-#Create table for storing user habits
+#Create Habits table for storing user habits
 #dbcursor.execute("CREATE TABLE IF NOT EXISTS Habits (ID INTEGER, HabitName TEXT NOT NULL, HabitPeriod TEXT NOT NULL, CreationDate TEXT NOT NULL, LastCompleted TEXT, Streak INTEGER NOT NULL, HabitStatus INTEGER NOT NULL, PRIMARY KEY (ID AUTOINCREMENT))")
+
+#Create Tasks table for storing completed habit tasks record
+#dbcursor.execute("CREATE TABLE IF NOT EXISTS Tasks (TaskID INTEGER, HabitID INTEGER, Task TEXT NOT NULL, Periodicity TEXT NOT NULL, TaskLogDate TEXT NOT NULL, Streak INTEGER NOT NULL, TaskStatus TEXT NOT NULL, PRIMARY KEY (TaskID AUTOINCREMENT))")
 
 #Create an OOP class named MyHabits
 class MyHabits:
@@ -72,8 +81,14 @@ class MyHabits:
         dbcursor.execute(query, status)
         habits = dbcursor.fetchall()
         #Display Habits to User
+        print("MY HABITS RECORD")
+        print("----------------")
+        print("----------------")
         for x in habits:
             print(x)
+            print("----------------")
+            print("----------------")
+            
 
     #LIST HABITS BY PERIODICITY
     def listHabitsByPeriodicity(period):
@@ -96,12 +111,93 @@ class MyHabits:
         else:
             print("INVALID INPUT")
 
+    #TASK MANAGEMENT
+
+    #CHECK OFF/LOG A HABIT TASK AS COMPLETED
+    def CheckOffTask():
+        #Display existing habit record to user
+        MyHabits.listAllHabits()
+        #Prompt user for the habit ID which he/she wants to check off it's task
+        id = int(input("ENTER HABIT ID TO LOG TASK AS COMPLETED: "))
+        #Validate the habit ID against the database Habits table record
+        query = "SELECT * FROM Habits WHERE ID = ? AND Habitstatus = ?"
+        params = (id, 1, )
+        validHabit = dbcursor.execute(query, params)
+        if validHabit:
+            habit = dbcursor.fetchall()
+            for row in habit:
+                habitID = row[0]
+                task = row[1]
+                periodicity = row[2]
+                x = datetime.datetime.now()
+                logDate = x.strftime("%x")
+
+            #Compute Streak
+            currentStreak = 1
+            y = datetime.datetime.now() - timedelta(days=1)
+            yesterday = y.strftime("%x")
+            query1 = "SELECT Streak FROM Tasks WHERE HabitID = ? AND Periodicity = ? AND TaskLogDate = ?"
+            queryValues1 = (habitID, "Daily", yesterday, )
+            getStreak = dbcursor.execute(query1, queryValues1)
+            streak = dbcursor.fetchone()
+            if dbcursor.rowcount == 1:
+                currentStreak += streak[0]
+            else:
+                currentStreak = 1
+
+            query2 = "SELECT COUNT (*) FROM Tasks WHERE HabitID = ? AND TaskLogDate = ? AND TaskStatus = ?"
+            queryValues2 = (habitID, logDate, "Completed", )
+            validateTaskLog = dbcursor.execute(query2, queryValues2)
+            taskLog = dbcursor.fetchone()
+            taskLogCount = taskLog[0]
+            if taskLogCount == 0:
+                #Log completed task
+                query3 = "INSERT INTO Tasks (HabitID, Task, Periodicity, TaskLogDate, Streak, TaskStatus) VALUES (?, ?, ?, ?, ?, ?)"
+                queryValues3 = (habitID, task, periodicity, logDate, currentStreak, "Completed")
+                completeTask = dbcursor.execute(query3, queryValues3)
+                if completeTask:
+                    query4 = "UPDATE Habits SET LastCompleted = ?, Streak = ? WHERE ID = ?"
+                    queryValues4 = (logDate, currentStreak, habitID)
+                    updateHabitRecord = dbcursor.execute(query4, queryValues4)
+                    if updateHabitRecord:
+                        dbconnection.commit()
+                        print("Task Completed!")
+                    else:
+                        print("Task Log Error")
+                else:
+                    print("Error logging task completion")
+            else:
+                print("You've already completed and logged this task for the day")
+
+        else:
+            print("Habit ID Error")
+
+    #LIST ALL COMPLETED TASKS ON THIS DAY
+    def GetCompletedTasks():
+        x = datetime.datetime.now()
+        logDate = x.strftime("%x")
+        query = "SELECT * FROM Tasks WHERE TaskLogDate = ?"
+        param = (logDate, )
+        dbcursor.execute(query, param)
+        tasks = dbcursor.fetchall()
+        #Display Habits to User
+        print("TASKS COMPLETED TODAY")
+        print("----------------------")
+        print("----------------------")
+        for x in tasks: 
+            print(x)
+            print("----------------------")
+            print("----------------------")
+
+
 #APP NAVIGATION KEYS
 print("ENTER 1 TO CREATE A NEW HABIT")
 print("ENTER 2 TO REMOVE A HABIT")
 print("ENTER 3 TO LIST ALL HABITS")
-print("ENTER 4 TO LIST ALL HABITS BY PERIODICITY")
-Menu = int(input("PLEASE ENTER A DIGIT BETWEEN 1 - 4: "))
+print("ENTER 4 TO LIST HABITS BY PERIODICITY")
+print("ENTER 5 TO LOG/CHECK OFF A COMPLETED HABIT TASK")
+print("ENTER 6 TO VIEW TASKS COMPLETED TODAY")
+Menu = int(input("PLEASE ENTER A DIGIT BETWEEN 1 - 6: "))
 
 if Menu == 1:
     #CREATE/ADD A NEW HABIT
@@ -122,6 +218,14 @@ elif Menu == 3:
 elif Menu == 4:
     #LIST HABITS BY PERIODICITY
     MyHabits.listHabitsByPeriodicity(int(input("HABIT PERIOD: Enter 1 for Daily; 2 for Weekly: ")))
+
+elif Menu == 5:
+    #LOG/CHECK OFF COMPLETED HABIT TASK
+    MyHabits.CheckOffTask()
+
+elif Menu == 6:
+    #LIST TASKS COMPLETED TODAY
+    MyHabits.GetCompletedTasks()
 
 
 else:
