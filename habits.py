@@ -1,3 +1,4 @@
+########################################################
 #A HABIT TRACKING APPLICATION PROGRAM WRITTEN IN PYTHON
 ########################################################
 
@@ -81,11 +82,13 @@ class MyHabits:
         dbcursor.execute(query, status)
         habits = dbcursor.fetchall()
         #Display Habits to User
+        print(" ")
+        print("----------------")
         print("MY HABITS RECORD")
         print("----------------")
-        print("----------------")
+        print(" ")
         for x in habits:
-            print(x)
+            print("| " + "ID => " + f"{x[0]}" + " | " + "HABIT: " + x[1] +" | " + "PERIODICITY: " + x[2] + " |")
             print("----------------")
             print("----------------")
             
@@ -111,7 +114,9 @@ class MyHabits:
         else:
             print("INVALID INPUT")
 
+    #################
     #TASK MANAGEMENT
+    #################
 
     #CHECK OFF/LOG A HABIT TASK AS COMPLETED
     def CheckOffTask():
@@ -140,8 +145,11 @@ class MyHabits:
             queryValues1 = (habitID, "Daily", yesterday, )
             getStreak = dbcursor.execute(query1, queryValues1)
             streak = dbcursor.fetchone()
-            if dbcursor.rowcount == 1:
-                currentStreak += streak[0]
+            if streak != None:
+                if streak[0] > 0:
+                    currentStreak = streak[0] + 1
+                else:
+                    currentStreak = 1
             else:
                 currentStreak = 1
 
@@ -161,7 +169,7 @@ class MyHabits:
                     updateHabitRecord = dbcursor.execute(query4, queryValues4)
                     if updateHabitRecord:
                         dbconnection.commit()
-                        print("Task Completed!")
+                        print("Awesome! Task Completed!")
                     else:
                         print("Task Log Error")
                 else:
@@ -189,15 +197,72 @@ class MyHabits:
             print("----------------------")
             print("----------------------")
 
+####################
+#ANALYTIC FUNCTIONS
+####################
+
+#VIEW STREAK ANALYSIS RECORD OF A HABIT
+def GetStreak(habitID):
+    query1 = "SELECT HabitName, HabitPeriod, Streak, LastCompleted FROM Habits WHERE ID = ?"
+    queryvalue1 = (habitID, )
+    dbcursor.execute(query1, queryvalue1)
+    streak = dbcursor.fetchall()
+    if streak != []:
+        print(" ")
+        print("--------------")
+        print("STREAK RECORD")
+        print("--------------")
+        for x in streak:
+            if x[1] == "Daily":
+                print(" ")
+                print("[ " + "TASK: " + x[0] + " | " + "STREAK: " + f"{x[2]}" + " DAY(S)" + " | " + "Last Completed On: " + f"{x[3]}" + " ]" )
+                print(" ")
+            elif x[1] == "Weekly":
+                print(" ")
+                print("[ " + "TASK: " + x[0] + " | " + "STREAK: " + f"{x[2]}" + " WEEK(S)" + " | " + "Last Completed On: " + f"{x[3]}" + " ]" )
+                print(" ")
+            else:
+                pass
+    else:
+         print("ERROR GETTING STREAK RECORD, PLEASE CHECK HABIT ID")
+
+#RUN AND GET TASK ANALYSIS FOR LONGEST STREAK RECORD OF A HABIT
+def GetLongestStreak(habitID):
+    query1 = "SELECT Task, Periodicity, MAX(Streak), TaskLogDate FROM Tasks WHERE HabitID = ?"
+    queryvalue1 = (habitID, )
+    dbcursor.execute(query1, queryvalue1)
+    streak = dbcursor.fetchall()
+    if streak != [(None, None, None, None)]:
+        print(" ")
+        print("--------------")
+        print("STREAK RECORD")
+        print("--------------")
+        for x in streak:
+            if x[1] == "Daily":
+                print(" ")
+                print("[ " + "TASK: " + x[0] + " | " + "STREAK: " + f"{x[2]}" + " DAY(S)" + " | " + "RECORD DATE: " + f"{x[3]}" + " ]" )
+                print(" ")
+            elif x[1] == "Weekly":
+                print(" ")
+                print("[ " + "TASK: " + x[0] + " | " + "STREAK: " + f"{x[2]}" + " WEEK(S)" + " | " + "RECORD DATE: " + f"{x[3]}" + " ]" )
+                print(" ")
+            else:
+                pass
+    else:
+         print("OOPS! NO RECORD, TRY COMPLETING HABIT TASK OR RECHECK HABIT ID PROVIDED")
 
 #APP NAVIGATION KEYS
-print("ENTER 1 TO CREATE A NEW HABIT")
-print("ENTER 2 TO REMOVE A HABIT")
-print("ENTER 3 TO LIST ALL HABITS")
-print("ENTER 4 TO LIST HABITS BY PERIODICITY")
-print("ENTER 5 TO LOG/CHECK OFF A COMPLETED HABIT TASK")
-print("ENTER 6 TO VIEW TASKS COMPLETED TODAY")
-Menu = int(input("PLEASE ENTER A DIGIT BETWEEN 1 - 6: "))
+print(" ")
+print("ENTER 1 => CREATE A NEW HABIT")
+print("ENTER 2 => REMOVE A HABIT")
+print("ENTER 3 => LIST ALL HABITS")
+print("ENTER 4 => LIST HABITS BY PERIODICITY")
+print("ENTER 5 => LOG/CHECK OFF A COMPLETED HABIT TASK")
+print("ENTER 6 => VIEW TASKS COMPLETED TODAY")
+print("ENTER 7 => VIEW STREAK RECORD")
+print("ENTER 8 => ANALYZE LONGEST STREAK RECORD")
+print(" ")
+Menu = int(input("PLEASE ENTER A DIGIT BETWEEN 1 - 8: "))
 
 if Menu == 1:
     #CREATE/ADD A NEW HABIT
@@ -227,6 +292,13 @@ elif Menu == 6:
     #LIST TASKS COMPLETED TODAY
     MyHabits.GetCompletedTasks()
 
+elif Menu == 7:
+    #VIEW STREAK RECORD ANALYSIS
+    GetStreak(int(input("ENTER HABIT ID TO VIEW STREAK ANALYSIS: ")))
+
+elif Menu == 8:
+    #ANALYZE LONGEST STREAK RECORD
+    GetLongestStreak(int(input("ENTER HABIT ID FOR LONGEST STREAK ANALYSIS: ")))
 
 else:
     print("INVALID MENU NAVIGATION COMMAND!")
